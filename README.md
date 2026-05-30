@@ -1,0 +1,74 @@
+# BMW F650GS 2001 — ECU DIY com Dashboard Bluetooth
+
+Substituição da ECU original BMW BMS-C por sistema open-source baseado em **Speeduino** (Arduino Mega 2560) + **ESP32** como bridge Bluetooth, com **app Flutter** funcionando como painel digital (inspirado no FuelTech F700).
+
+## Visão Geral
+
+```
+Sensores ──► Speeduino (ECU) ──UART──► ESP32 (BLE) ──BLE──► App Flutter
+                 │                                              │
+             Injetor                                      Dashboard +
+             Bobina                                       Editor Mapas
+             Bomba
+```
+
+## Componentes do Projeto
+
+| Pasta | Descrição |
+|---|---|
+| `docs/` | Especificações, fiação, BOM, guia de calibração |
+| `firmware/speeduino/` | Mapa base (.msq) para TunerStudio |
+| `firmware/esp32-ble-bridge/` | Firmware ESP32 — bridge UART/BLE |
+| `mobile-app/` | App Flutter — painel + editor de mapas |
+| `hardware/` | Lista de materiais, notas de circuito |
+
+## Início Rápido
+
+### 1. Hardware
+Consulte [`docs/bom.md`](docs/bom.md) para a lista completa de componentes e [`docs/wiring-diagram.md`](docs/wiring-diagram.md) para o diagrama de fiação.
+
+### 2. Firmware Speeduino
+- Baixe o Speeduino firmware: https://github.com/noisymime/speeduino
+- Compile e carregue no Arduino Mega 2560
+- Abra `firmware/speeduino/f650gs_base.msq` no TunerStudio para o mapa base da F650GS
+
+### 3. Firmware ESP32
+```bash
+cd firmware/esp32-ble-bridge
+# Instale PlatformIO: https://platformio.org
+pio run --target upload
+```
+
+### 4. App Flutter
+```bash
+cd mobile-app
+flutter pub get
+flutter run
+```
+
+## Especificações do Motor
+
+- **Motor**: Rotax 654cc, monocilíndrico, 4 válvulas SOHC
+- **Roda fônica**: 36-1 dentes no virabrequim
+- **Injetor**: Bosch EV1, ~270cc/min @ 3bar, alta impedância (12–16Ω)
+- **Ignição**: Bobina indutiva, faísca desperdiçada
+- **Pressão de combustível**: 3 bar
+
+## Recursos do App (Dashboard)
+
+- Tacômetro 0–8000 RPM
+- AFR (relação ar/combustível) com faixas coloridas
+- Temperatura de água e ar
+- TPS (posição do acelerador)
+- Avanço de ignição
+- Tensão da bateria
+- Editor de mapa VE 16×16
+- Log de dados em tempo real
+
+## Aviso de Segurança
+
+> Este projeto envolve modificação no sistema de combustível e ignição de um veículo. Realize todos os testes em bancada antes da instalação. O autor não se responsabiliza por danos causados pelo uso inadequado do sistema.
+
+## Licença
+
+MIT License
