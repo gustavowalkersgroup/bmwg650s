@@ -1,5 +1,19 @@
 # Lista de Materiais (BOM) — ECU DIY BMW F650GS
 
+## Sensores Adicionais (Knock + Óleo + VSS)
+
+| # | Componente | Especificação | Qtd | Preço Est. (R$) | Onde Comprar |
+|---|---|---|---|---|---|
+| A1 | Sensor de knock | Bosch 0 261 231 006 (M8, plano) | 1 | 30–50 | Autopeças, Mercado Livre |
+| A2 | Sender pressão de óleo | 0–10 bar, 0,5–4,5V, 1/8" NPT | 1 | 35–60 | AliExpress, autopeças |
+| A3 | Adaptador rosca óleo | M10×1,0 fêmea → 1/8" NPT macho | 1 | 15–25 | Autopeças, AliExpress |
+| A4 | Sensor VSS Hall | 3 fios, Hall effect, compatível 5V | 1 | 20–35 | AliExpress (buscar "hall speed sensor motorcycle") |
+| A5 | Ímã neodímio 6mm | Para roda fônica VSS se necessário | 4 | 5 | AliExpress |
+
+**Subtotal adicional: ~R$105–175**
+
+> **Sobre o O2 original (narrowband)**: A F650GS 2001 tem apenas sensor de banda estreita (Bosch LSM11) no escapamento — saída 0,1–0,9V, serve só para malha fechada em cruzeiro (14,7 AFR). Para calibrar a ECU em toda a faixa é **obrigatório** substituir por wideband (já listado abaixo como item 6).
+
 ## Componentes Principais
 
 | # | Componente | Especificação | Qtd | Preço Est. (R$) | Onde Comprar |
@@ -69,11 +83,12 @@
 
 | Categoria | Mínimo (R$) | Máximo (R$) |
 |---|---|---|
+| Sensores adicionais (knock, óleo, VSS) | 105 | 175 |
 | Componentes principais | 445 | 800 |
 | Eletrônicos | 53 | 53 |
 | Conectores e cabeamento | 240 | 280 |
 | Proteção e montagem | 128 | 143 |
-| **TOTAL** | **866** | **1.276** |
+| **TOTAL** | **971** | **1.451** |
 
 > **Comparativo**: ECU original BMW BMS-C usada: R$800–2.000 (sem garantia, sem possibilidade de mapeamento).
 

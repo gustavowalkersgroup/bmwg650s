@@ -76,6 +76,35 @@
 - **Upgrade recomendado**: Bosch wideband LSU 4.9 com controlador CJ125
   - Saída: AFR 10–20 (ou Lambda 0,65–1,35) via sinal analógico
 
+### Sonda Lambda Original (Narrowband)
+- **Tipo**: Bosch LSM11 — narrowband (banda estreita)
+- **Saída**: 0,1–0,9V — sinal binário rico/pobre em torno de λ=1 (14,7 AFR)
+- **Limitação**: não indica o AFR real fora da faixa estequiométrica
+- **Uso com nova ECU**: mantida para controle de malha fechada no cruzeiro; **não** substitui wideband para calibração inicial
+- **Upgrade recomendado**: substituir por Bosch LSU 4.9 + controlador (CJ125 DIY ou Spartan 3)
+
+### Sensor de Knock (Detonação)
+- **Tipo**: Sensor piezo de knock — Bosch tipo plano (Flat Type)
+- **Referência**: Bosch 0 261 231 006 ou similar M8
+- **Localização**: bloco do motor, lado esquerdo, abaixo da cabeça de cilindro
+- **Saída**: sinal de vibração ~5–15 kHz (ressonância de detonação)
+- **Conexão**: Speeduino pino KNOCK (entrada analógica com filtro passa-banda interno)
+- **Função na ECU**: Speeduino detecta detonação e retarda avanço automaticamente (knock retard)
+
+### Sensor de Pressão de Óleo
+- **Tipo recomendado**: Sender analógico 0–10 bar, saída 0,5–4,5V, rosca 1/8" NPT
+- **Tipo original (BMW)**: chave on/off (apenas alarme de nível baixo) — não dá leitura em bar
+- **Localização**: galeria de óleo no bloco (tampa ou conexão T na saída do filtro)
+- **Conexão**: sensor analógico → divisor resistivo ÷2 → **ESP32 GPIO34** (ADC)
+- **Rosca**: M10×1,0 (comum em motos) ou 1/8" NPT com adaptador
+
+### Sensor VSS (Velocidade)
+- **Tipo original**: sensor Hall no pinhão da roda dianteira (cabo velocímetro → transmissor eletromag.)
+- **Alternativa**: sensor Hall na roda traseira (se equipada com ABS)
+- **Saída**: sinal digital pulsante — pulsos por revolução da roda
+- **Conexão**: Speeduino pino VSS (entrada digital)
+- **Configuração**: circunferência da roda + pulsos por revolução → TunerStudio
+
 ### Sensor IAC (Controle de Marcha Lenta)
 - **Tipo**: Válvula de passo (stepper motor), 4 fios
 - **Passos**: 0–255 passos

@@ -94,7 +94,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // Linha de dados numéricos
+                      // Linha de dados numéricos — linha 1
                       _Card(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -109,6 +109,31 @@ class DashboardScreen extends StatelessWidget {
                                   color: data.alarmBatt ? Colors.red : null),
                               _DataCell('SYNC', data.synced ? 'OK' : 'FALHA',
                                   color: data.synced ? Colors.green : Colors.red),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Linha de dados numéricos — linha 2 (novos sensores)
+                      _Card(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _DataCell(
+                                'ÓLEO',
+                                '${data.oilPressBar.toStringAsFixed(1)} bar',
+                                color: data.alarmOil ? Colors.red : (data.oilPressBar < 1.5 && data.rpm > 1500 ? Colors.orange : null),
+                              ),
+                              _DataCell('VEL', '${data.speedKmh} km/h'),
+                              _DataCell(
+                                'KNOCK',
+                                data.knockRetDeg > 0 ? '-${data.knockRetDeg}°' : 'OK',
+                                color: data.alarmKnock ? Colors.red : (data.knockRetDeg > 0 ? Colors.orange : Colors.green),
+                              ),
+                              _DataCell('FLEX', '${data.flexPct}% E'),
+                              _DataCell('LOOP', '${data.loopMs}ms'),
                             ],
                           ),
                         ),

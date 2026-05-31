@@ -68,38 +68,47 @@ void ble_init() {
     Serial.println("[BLE] Advertising iniciado: " BLE_DEVICE_NAME);
 }
 
-void ble_notify_realtime(const SpeeduinoData &data) {
+void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar) {
     if (!connected || !pRealtime) {
         return;
     }
 
     BleRealtimePacket pkt;
-    pkt.rpm        = data.rpm;
-    pkt.tps        = (uint8_t)((uint32_t)data.tps * 100 / 255);  // 0–255 → 0–100%
-    pkt.map_kpa    = data.map_kpa;
-    pkt.clt_c      = (int8_t)((int)data.temp_clt - 40);
-    pkt.iat_c      = (int8_t)((int)data.temp_iat - 40);
-    pkt.afr10      = data.o2_primary;
-    pkt.afr_tgt10  = data.afr_target;
-    pkt.adv        = data.adv_deg;
-    pkt.batt10     = data.battery10;
-    pkt.ve         = data.ve;
-    pkt.pw_ms10    = data.pw1_ms10;
-    pkt.idle_duty  = data.idle_duty;
-    pkt.sync       = data.sync_status;
+    pkt.rpm         = data.rpm;
+    pkt.tps         = (uint8_t)((uint32_t)data.tps * 100 / 255);
+    pkt.map_kpa     = data.map_kpa;
+    pkt.clt_c       = (int8_t)((int)data.temp_clt - 40);
+    pkt.iat_c       = (int8_t)((int)data.temp_iat - 40);
+    pkt.afr10       = data.o2_primary;
+    pkt.afr_tgt10   = data.afr_target;
+    pkt.adv         = data.adv_deg;
+    pkt.batt10      = data.battery10;
+    pkt.ve          = data.ve;
+    pkt.pw_ms10     = data.pw1_ms10;
+    pkt.idle_duty   = data.idle_duty;
+    pkt.sync        = data.sync_status;
     pkt.corrections = data.corrections;
-    pkt.flex_pct   = data.flex_sensor;
-    pkt.baro       = data.baro;
-    pkt.loop_ms    = data.loop_time;
-    pkt.reserved   = 0;
+    pkt.flex_pct    = data.flex_sensor;
+    pkt.baro        = data.baro;
+    pkt.loop_ms     = data.loop_time;
+    pkt.speed_kmh   = data.vss;
+    pkt.oil_press10 = (uint8_t)constrain((int)(oil_press_bar * 10.0f), 0, 255);
+    pkt.knock_ret   = data.knock_ret;
+    pkt.reserved1   = 0;
+    pkt.reserved2   = 0;
 
-    // Bitfield de alarmes
+    // Alarme de pressão de óleo: só ativa acima de 1500 RPM (descarta idle)
+    bool alarm_oil   = (data.rpm > 1500) && (oil_press_bar < (ALARM_OIL_LOW_BAR10 / 10.0f));
+    bool alarm_knock = (data.knock_ret >= ALARM_KNOCK_DEG);
+
     pkt.alarms = 0;
     if (data.alarm_clt)  pkt.alarms |= (1 << 0);
     if (data.alarm_rpm)  pkt.alarms |= (1 << 1);
     if (data.alarm_batt) pkt.alarms |= (1 << 2);
     if (data.alarm_lean) pkt.alarms |= (1 << 3);
     if (data.alarm_rich) pkt.alarms |= (1 << 4);
+    if (alarm_oil)       pkt.alarms |= (1 << 5);
+    if (alarm_knock)     pkt.alarms |= (1 << 6);
 
     pRealtime->setValue((uint8_t *)&pkt, sizeof(pkt));
     pRealtime->notify();

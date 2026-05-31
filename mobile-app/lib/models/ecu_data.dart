@@ -18,6 +18,9 @@ class EcuData {
   final int flexPct;
   final int baroKpa;
   final int loopMs;
+  final int speedKmh;
+  final double oilPressBar;
+  final int knockRetDeg;
 
   // Alarmes
   final bool alarmClt;
@@ -25,8 +28,10 @@ class EcuData {
   final bool alarmBatt;
   final bool alarmLean;
   final bool alarmRich;
+  final bool alarmOil;
+  final bool alarmKnock;
 
-  bool get hasAlarm => alarmClt || alarmRpm || alarmBatt || alarmLean || alarmRich;
+  bool get hasAlarm => alarmClt || alarmRpm || alarmBatt || alarmLean || alarmRich || alarmOil || alarmKnock;
 
   const EcuData({
     this.rpm = 0,
@@ -46,14 +51,19 @@ class EcuData {
     this.flexPct = 0,
     this.baroKpa = 101,
     this.loopMs = 0,
+    this.speedKmh = 0,
+    this.oilPressBar = 0.0,
+    this.knockRetDeg = 0,
     this.alarmClt = false,
     this.alarmRpm = false,
     this.alarmBatt = false,
     this.alarmLean = false,
     this.alarmRich = false,
+    this.alarmOil = false,
+    this.alarmKnock = false,
   });
 
-  // Parse do pacote BLE de 20 bytes enviado pelo ESP32
+  // Parse do pacote BLE de 24 bytes enviado pelo ESP32
   factory EcuData.fromBytes(Uint8List bytes) {
     if (bytes.length < 20) return const EcuData();
 
@@ -61,28 +71,33 @@ class EcuData {
     final alarms = bytes[14];
 
     return EcuData(
-      rpm:        bd.getUint16(0, Endian.little),
-      tps:        bytes[2],
-      mapKpa:     bytes[3],
-      cltC:       bytes[4].toSigned(8),
-      iatC:       bytes[5].toSigned(8),
-      afr:        bytes[6] / 10.0,
-      afrTarget:  bytes[7] / 10.0,
-      advDeg:     bytes[8].toSigned(8),
-      battV:      bytes[9] / 10.0,
-      ve:         bytes[10],
-      pwMs:       bytes[11] / 10.0,
-      idleDuty:   bytes[12],
-      synced:     bytes[13] == 0,
+      rpm:         bd.getUint16(0, Endian.little),
+      tps:         bytes[2],
+      mapKpa:      bytes[3],
+      cltC:        bytes[4].toSigned(8),
+      iatC:        bytes[5].toSigned(8),
+      afr:         bytes[6] / 10.0,
+      afrTarget:   bytes[7] / 10.0,
+      advDeg:      bytes[8].toSigned(8),
+      battV:       bytes[9] / 10.0,
+      ve:          bytes[10],
+      pwMs:        bytes[11] / 10.0,
+      idleDuty:    bytes[12],
+      synced:      bytes[13] == 0,
       corrections: bytes[15],
-      flexPct:    bytes[16],
-      baroKpa:    bytes[17],
-      loopMs:     bytes[18],
-      alarmClt:   (alarms & (1 << 0)) != 0,
-      alarmRpm:   (alarms & (1 << 1)) != 0,
-      alarmBatt:  (alarms & (1 << 2)) != 0,
-      alarmLean:  (alarms & (1 << 3)) != 0,
-      alarmRich:  (alarms & (1 << 4)) != 0,
+      flexPct:     bytes[16],
+      baroKpa:     bytes[17],
+      loopMs:      bytes[18],
+      speedKmh:    bytes.length > 19 ? bytes[19] : 0,
+      oilPressBar: bytes.length > 20 ? bytes[20] / 10.0 : 0.0,
+      knockRetDeg: bytes.length > 21 ? bytes[21] : 0,
+      alarmClt:    (alarms & (1 << 0)) != 0,
+      alarmRpm:    (alarms & (1 << 1)) != 0,
+      alarmBatt:   (alarms & (1 << 2)) != 0,
+      alarmLean:   (alarms & (1 << 3)) != 0,
+      alarmRich:   (alarms & (1 << 4)) != 0,
+      alarmOil:    (alarms & (1 << 5)) != 0,
+      alarmKnock:  (alarms & (1 << 6)) != 0,
     );
   }
 
@@ -91,11 +106,13 @@ class EcuData {
 
   String get alarmDescription {
     final List<String> msgs = [];
-    if (alarmClt)  msgs.add('TEMP MOTOR ALTA');
-    if (alarmRpm)  msgs.add('RPM LIMIT');
-    if (alarmBatt) msgs.add('BATERIA BAIXA');
-    if (alarmLean) msgs.add('MISTURA POBRE');
-    if (alarmRich) msgs.add('MISTURA RICA');
+    if (alarmClt)   msgs.add('TEMP MOTOR ALTA');
+    if (alarmRpm)   msgs.add('RPM LIMIT');
+    if (alarmBatt)  msgs.add('BATERIA BAIXA');
+    if (alarmLean)  msgs.add('MISTURA POBRE');
+    if (alarmRich)  msgs.add('MISTURA RICA');
+    if (alarmOil)   msgs.add('PRESSÃO ÓLEO BAIXA');
+    if (alarmKnock) msgs.add('DETONAÇÃO DETECTADA');
     return msgs.join(' | ');
   }
 }

@@ -157,6 +157,49 @@ Fator: Vout = Vbat × (3,3 / 13,3) → calibrar no TunerStudio
 Range: 0–5V representa 0–20,15V da bateria
 ```
 
+### Sensor de Knock
+
+```
+Sensor Knock (2 fios)
+  Fio sinal ──► Speeduino pino KNOCK (A8 ou pino configurável)
+  Fio GND   ──► GND no bloco do motor (estrela de terra)
+
+Obs: O Speeduino v0.4 tem filtro passa-banda para knock configurável
+no TunerStudio (frequência central: ~6kHz para motor 4 cilindros,
+ajustar para o Rotax monocilíndrico — testar entre 4–10 kHz).
+```
+
+### Sensor de Pressão de Óleo (Analógico → ESP32)
+
+```
+Sender de óleo (0–10 bar, saída 0,5–4,5V)
+  Fio sinal ──► R1 (10kΩ) ──┬──► ESP32 GPIO34 (ADC)
+                             │
+                          R2 (10kΩ)
+                             │
+                            GND
+
+Divisor ÷2: 4,5V → 2,25V no ADC ✓ (abaixo dos 3,3V máximo do ESP32)
+
+Rosca de instalação: 1/8" NPT no bloco ou T na saída do filtro de óleo.
+Alternativa M10×1,0 com adaptador NPT.
+```
+
+> **Por que no ESP32 e não no Speeduino?** O Speeduino tem entradas analógicas limitadas, todas usadas por sensores críticos para EFI. O ESP32 tem ADC livre e monitora óleo independentemente da ECU — mais seguro.
+
+### Sensor VSS (Velocímetro)
+
+```
+Sensor Hall VSS (3 fios: VCC, GND, sinal)
+  VCC    ──► +5V (da ECU Speeduino)
+  GND    ──► GND
+  Sinal  ──► Speeduino pino VSS (D20 ou configurável)
+
+Configuração no TunerStudio:
+  - Pulsos por revolução: depende do sensor (medir com osciloscópio)
+  - Circunferência da roda traseira: 1910mm (pneu 130/80-17 padrão F650GS)
+```
+
 ### Conexão ESP32 ↔ Speeduino
 
 ```
