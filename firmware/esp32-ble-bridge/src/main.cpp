@@ -6,11 +6,13 @@
 #include "ble_server.h"
 #include "imu_sensor.h"
 #include "fuel_tracker.h"
+#include "cold_start.h"
 
-static SpeeduinoData g_data;
-static float         g_oil_press_bar = 0.0f;
-static ImuData       g_imu;
-static FuelState     g_fuel;
+static SpeeduinoData   g_data;
+static float           g_oil_press_bar = 0.0f;
+static ImuData         g_imu;
+static FuelState       g_fuel;
+static ColdStartState  g_cold;
 static SemaphoreHandle_t g_data_mutex;
 
 // Lê pressão de óleo do ADC do ESP32 com média de N amostras
@@ -46,10 +48,15 @@ void task_serial_read(void *param) {
             fuel_update(pw_ms, local.rpm, local.vss, SERIAL_POLL_MS);
             FuelState fuel = fuel_get();
 
+            int clt_c = (int)local.temp_clt - 40;
+            cold_start_update(clt_c, local.flex_sensor, local.rpm, SERIAL_POLL_MS);
+            ColdStartState cold = cold_start_get();
+
             xSemaphoreTake(g_data_mutex, portMAX_DELAY);
             g_data          = local;
             g_oil_press_bar = oil;
             g_fuel          = fuel;
+            g_cold          = cold;
             xSemaphoreGive(g_data_mutex);
         } else {
             Serial.println("[UART] Timeout Speeduino");
@@ -80,13 +87,15 @@ void task_imu_ble(void *param) {
             SpeeduinoData local;
             float oil;
             FuelState fuel;
+            ColdStartState cold;
             xSemaphoreTake(g_data_mutex, portMAX_DELAY);
             local = g_data;
             oil   = g_oil_press_bar;
             fuel  = g_fuel;
+            cold  = g_cold;
             xSemaphoreGive(g_data_mutex);
 
-            ble_notify_realtime(local, oil, imu, fuel);
+            ble_notify_realtime(local, oil, imu, fuel, cold);
         }
 
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(IMU_UPDATE_MS));
@@ -112,6 +121,7 @@ void setup() {
     speeduino_init();
     fuel_init();
     imu_init();
+    cold_start_init();
     ble_init();
 
     // Core 0: comunicação serial com Speeduino (mesmo core do protocolo WiFi/BT basal)
@@ -127,7 +137,7 @@ void loop() {
     // Loop principal livre — tasks gerenciam o trabalho
     delay(5000);
     Serial.printf("[STATUS] RPM=%u CLT=%d AFR=%.1f OIL=%.1fbar FLEX=%d%% "
-                  "LEAN=%.0f COMB=%d%% (%.1f km/l)%s%s\n",
+                  "LEAN=%.0f COMB=%d%% (%.1f km/l)%s%s%s\n",
         g_data.rpm,
         (int)g_data.temp_clt - 40,
         g_data.o2_primary / 10.0f,
@@ -137,6 +147,9 @@ void loop() {
         g_fuel.level_pct,
         g_fuel.econ_kmpl,
         g_fuel.low_fuel ? " [RESERVA]" : "",
-        g_imu.crash ? " [QUEDA!]" : ""
+        g_imu.crash ? " [QUEDA!]" : "",
+        g_cold.heater_active ? " [AQUECENDO]" :
+            (g_cold.too_cold_estart ? " [FRIO P/ ETANOL]" :
+            (g_cold.engine_cold ? " [MOTOR FRIO]" : ""))
     );
 }

@@ -93,7 +93,8 @@ void ble_init() {
 }
 
 void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
-                         const ImuData &imu, const FuelState &fuel) {
+                         const ImuData &imu, const FuelState &fuel,
+                         const ColdStartState &cold) {
     if (!connected || !pRealtime) {
         return;
     }
@@ -122,11 +123,17 @@ void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
     pkt.lean_deg    = (int8_t)constrain((int)imu.lean_deg, -90, 90);
     pkt.fuel_pct    = fuel.level_pct;
     pkt.econ_kmpl10 = (uint8_t)constrain((int)(fuel.econ_kmpl * 10.0f), 0, 255);
+    pkt.cold_min_c  = cold.min_start_c;
+    pkt.heater_s    = cold.heater_left_s;
 
     pkt.status = 0;
-    if (imu.crash)      pkt.status |= (1 << 0);
-    if (fuel.low_fuel)  pkt.status |= (1 << 1);
-    if (imu.present)    pkt.status |= (1 << 2);
+    if (imu.crash)         pkt.status |= (1 << 0);
+    if (fuel.low_fuel)     pkt.status |= (1 << 1);
+    if (imu.present)       pkt.status |= (1 << 2);
+    if (cold.engine_cold)  pkt.status |= (1 << 3);
+    if (cold.too_cold_estart) pkt.status |= (1 << 4);
+    if (cold.heater_active)   pkt.status |= (1 << 5);
+    if (cold.ready_to_start)  pkt.status |= (1 << 6);
 
     // Alarme de pressão de óleo: só ativa acima de 1500 RPM (descarta idle)
     bool alarm_oil   = (data.rpm > 1500) && (oil_press_bar < (ALARM_OIL_LOW_BAR10 / 10.0f));

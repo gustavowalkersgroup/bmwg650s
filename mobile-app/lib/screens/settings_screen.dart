@@ -127,6 +127,38 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // ── Partida a frio ────────────────────────────────────────────
+              _Section(
+                icon: Icons.ac_unit,
+                title: 'Partida a Frio (Etanol)',
+                children: [
+                  _InfoRow('Estado',
+                      data.heaterOn
+                          ? 'Aquecendo (${data.heaterSecs}s)'
+                          : (data.tooColdEthanol
+                              ? 'Frio para o etanol'
+                              : (data.engineCold ? 'Motor frio' : 'Pronto')),
+                      valueColor: data.heaterOn
+                          ? Colors.orange
+                          : (data.tooColdEthanol
+                              ? Colors.deepOrange
+                              : (data.readyToStart ? Colors.green : Colors.white))),
+                  _InfoRow('Temp do motor', '${data.cltC}°C'),
+                  _InfoRow('Mín. p/ etanol atual',
+                      data.coldMinC > 0 ? '${data.coldMinC}°C' : '—'),
+                  _InfoRow('Aquecedor admissão',
+                      data.heaterOn ? '✓ Ligado' : 'Desligado',
+                      valueColor: data.heaterOn ? Colors.orange : Colors.white54),
+                  const SizedBox(height: 4),
+                  _InfoRow('Como funciona',
+                      'Etanol não vaporiza a frio. O ESP32 aquece a admissão '
+                      'antes da partida — ver docs/ethanol-cold-start.md',
+                      subtle: true),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
               // ── Sobre ─────────────────────────────────────────────────────
               _Section(
                 icon: Icons.info_outline,

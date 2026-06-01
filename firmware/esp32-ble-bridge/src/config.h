@@ -109,4 +109,19 @@
 #define FUEL_RESERVE_SW_PIN   23      // GPIO23 — chave de reserva (ativa em LOW)
 #define FUEL_RESERVE_SW_ACTIVE LOW    // nível quando está na reserva
 
+// ── Partida a Frio com Etanol ─────────────────────────────────────────────
+// Etanol não vaporiza bem a frio. O ESP32 indica "motor frio" e (opcional)
+// controla um aquecedor de admissão PTC antes da partida — estilo "aguarde".
+#define COLDSTART_ENABLED     1
+#define COLDSTART_WARMUP_C    60      // CLT abaixo disso = motor ainda frio (indicador)
+#define COLDSTART_E0_MIN_C    2       // temp mínima confortável com gasolina pura (°C)
+#define COLDSTART_E100_MIN_C  18      // temp mínima confortável com etanol puro (°C)
+#define COLDSTART_RUN_RPM     400     // acima disso o motor é considerado "rodando"
+
+// Aquecedor de admissão (resistência PTC) — preaquece antes da partida fria
+#define COLDSTART_HEATER_ENABLED 1
+#define COLDSTART_HEATER_PIN  4       // GPIO4 → relé do aquecedor PTC
+#define COLDSTART_HEATER_LEVEL HIGH   // nível que LIGA o aquecedor
+#define COLDSTART_HEATER_MAX_S 30     // tempo máximo de preaquecimento (s)
+
 

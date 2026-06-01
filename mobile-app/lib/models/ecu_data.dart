@@ -30,6 +30,14 @@ class EcuData {
   final bool lowFuel;       // reserva (chave original OU virtual)
   final bool imuOk;         // IMU presente e respondendo
 
+  // Partida a frio (etanol)
+  final bool engineCold;    // motor abaixo da temperatura de trabalho
+  final bool tooColdEthanol;// frio demais para o teor de etanol atual
+  final bool heaterOn;      // aquecedor de admissão ligado
+  final bool readyToStart;  // temp ok OU preaquecimento concluído
+  final int coldMinC;       // temp mínima recomendada p/ partida (°C)
+  final int heaterSecs;     // segundos restantes de preaquecimento
+
   // Alarmes
   final bool alarmClt;
   final bool alarmRpm;
@@ -67,6 +75,12 @@ class EcuData {
     this.econKmpl = 0.0,
     this.crash = false,
     this.lowFuel = false,
+    this.engineCold = false,
+    this.tooColdEthanol = false,
+    this.heaterOn = false,
+    this.readyToStart = true,
+    this.coldMinC = 0,
+    this.heaterSecs = 0,
     this.imuOk = false,
     this.alarmClt = false,
     this.alarmRpm = false,
@@ -77,7 +91,7 @@ class EcuData {
     this.alarmKnock = false,
   });
 
-  // Parse do pacote BLE de 24 bytes enviado pelo ESP32
+  // Parse do pacote BLE de 28 bytes enviado pelo ESP32
   factory EcuData.fromBytes(Uint8List bytes) {
     if (bytes.length < 20) return const EcuData();
 
@@ -109,9 +123,15 @@ class EcuData {
       leanDeg:     bytes.length > 22 ? bytes[22].toSigned(8) : 0,
       fuelPct:     bytes.length > 24 ? bytes[24] : 100,
       econKmpl:    bytes.length > 25 ? bytes[25] / 10.0 : 0.0,
-      crash:       (status & (1 << 0)) != 0,
-      lowFuel:     (status & (1 << 1)) != 0,
-      imuOk:       (status & (1 << 2)) != 0,
+      crash:          (status & (1 << 0)) != 0,
+      lowFuel:        (status & (1 << 1)) != 0,
+      imuOk:          (status & (1 << 2)) != 0,
+      engineCold:     (status & (1 << 3)) != 0,
+      tooColdEthanol: (status & (1 << 4)) != 0,
+      heaterOn:       (status & (1 << 5)) != 0,
+      readyToStart:   (status & (1 << 6)) != 0,
+      coldMinC:    bytes.length > 26 ? bytes[26] : 0,
+      heaterSecs:  bytes.length > 27 ? bytes[27] : 0,
       alarmClt:    (alarms & (1 << 0)) != 0,
       alarmRpm:    (alarms & (1 << 1)) != 0,
       alarmBatt:   (alarms & (1 << 2)) != 0,

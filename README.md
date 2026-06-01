@@ -29,6 +29,7 @@ Sensores ──► Speeduino (ECU) ──UART──► ESP32 (BLE) ──BLE─�
 | [`docs/riding-modes-abs-rbw.md`](docs/riding-modes-abs-rbw.md) | Modos de pilotagem, controle de tração, relé ABS, ride-by-wire |
 | [`docs/flex-fuel.md`](docs/flex-fuel.md) | Conversão flex (gasolina/etanol) com Speeduino |
 | [`docs/fuel-level-and-imu.md`](docs/fuel-level-and-imu.md) | Medidor de combustível virtual + IMU (inclinação/queda) |
+| [`docs/ethanol-cold-start.md`](docs/ethanol-cold-start.md) | Partida a frio com etanol + aquecedor de admissão |
 
 ## Início Rápido
 
@@ -74,6 +75,7 @@ flutter run
 - Teor de etanol (flex), correções
 - **Combustível virtual**: nível, autonomia e consumo (km/l) — sem boia
 - **IMU**: ângulo de inclinação + detecção de queda (corta a bomba)
+- **Partida a frio**: indicador de motor frio + aquecedor para etanol
 - Editor de mapa VE 16×16
 - Log de dados em tempo real
 

@@ -2,13 +2,15 @@
 #include "speeduino_serial.h"
 #include "imu_sensor.h"
 #include "fuel_tracker.h"
+#include "cold_start.h"
 
 void ble_init();
 void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
-                         const ImuData &imu, const FuelState &fuel);
+                         const ImuData &imu, const FuelState &fuel,
+                         const ColdStartState &cold);
 bool ble_is_connected();
 
-// Pacote BLE de 26 bytes enviado ao app a cada 50ms
+// Pacote BLE de 28 bytes enviado ao app a cada 50ms
 struct __attribute__((packed)) BleRealtimePacket {
     uint16_t rpm;        // [0-1]   RPM real
     uint8_t  tps;        // [2]     TPS 0–100%
@@ -33,8 +35,11 @@ struct __attribute__((packed)) BleRealtimePacket {
     uint8_t  oil_press10;// [20]    Pressão de óleo ×10 bar (lida pelo ESP32)
     uint8_t  knock_ret;  // [21]    Retardo knock graus (via Speeduino)
     int8_t   lean_deg;   // [22]    Inclinação lateral (graus, IMU)
-    // status bitfield: bit0=CRASH, bit1=LOW_FUEL/reserva, bit2=IMU_OK
+    // status bitfield: bit0=CRASH, bit1=LOW_FUEL, bit2=IMU_OK,
+    //   bit3=ENGINE_COLD, bit4=TOO_COLD_ETHANOL, bit5=HEATER_ON, bit6=READY_START
     uint8_t  status;     // [23]
     uint8_t  fuel_pct;   // [24]    Nível de combustível virtual (%)
     uint8_t  econ_kmpl10;// [25]    Consumo instantâneo km/l ×10
+    uint8_t  cold_min_c; // [26]    Temp mínima recomendada p/ partida (°C)
+    uint8_t  heater_s;   // [27]    Segundos restantes de preaquecimento
 };

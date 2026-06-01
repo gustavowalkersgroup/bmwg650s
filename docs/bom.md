@@ -20,8 +20,10 @@
 | B2 | IMU MPU6050 | Acelerômetro+giroscópio, I2C | 1 | 12–20 | AliExpress, FilipeFlop |
 | B3 | Relé bomba (corte na queda) | 12V com socket | 1 | 12 | Autopeças |
 | B4 | Injetor maior (só E100) | 350–400 cc/min, alta impedância | 1 | 60–90 | opcional, p/ etanol puro |
+| B5 | Aquecedor admissão PTC | 12V 100–150W, partida a frio etanol | 1 | 30–50 | AliExpress, autopeças |
+| B6 | Relé 20A + fusível 15A | aciona o PTC (alta corrente) | 1 | 15 | Autopeças |
 
-**Subtotal opcional: ~R$84–242**
+**Subtotal opcional: ~R$129–307**
 
 > **Combustível virtual**: não precisa de peça nova — usa a injeção já
 > existente + a chave de reserva original. Custo R$0.

@@ -41,6 +41,8 @@ class DashboardScreen extends StatelessWidget {
           body: Column(
             children: [
               if (data.hasAlarm) _AlarmBanner(data: data),
+              if (data.engineCold || data.tooColdEthanol || data.heaterOn)
+                _ColdStartBanner(data: data),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
@@ -221,6 +223,59 @@ class _AlarmBanner extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// Banner de partida a frio — etanol exige motor mais quente para partir
+class _ColdStartBanner extends StatelessWidget {
+  final EcuData data;
+
+  const _ColdStartBanner({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    // Define cor, ícone e mensagem conforme a situação
+    final (Color bg, IconData icon, String msg) = switch (data) {
+      _ when data.heaterOn => (
+        Colors.orange.shade800,
+        Icons.hourglass_bottom,
+        data.heaterSecs > 0
+            ? 'AQUECENDO ADMISSÃO — aguarde ${data.heaterSecs}s antes de dar a partida'
+            : 'AQUECENDO ADMISSÃO — aguarde…',
+      ),
+      _ when data.tooColdEthanol => (
+        Colors.deepOrange.shade900,
+        Icons.ac_unit,
+        'FRIO PARA ETANOL (${data.flexPct}%) — ideal acima de ${data.coldMinC}°C. '
+            '${data.readyToStart ? "Pode tentar a partida." : "Preaqueça antes."}',
+      ),
+      _ => (
+        Colors.blueGrey.shade800,
+        Icons.thermostat,
+        'MOTOR FRIO (${data.cltC}°C) — aguardando aquecimento',
+      ),
+    };
+
+    return Container(
+      width: double.infinity,
+      color: bg,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              msg,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+          if (data.readyToStart && !data.heaterOn)
+            const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
         ],
       ),
     );
