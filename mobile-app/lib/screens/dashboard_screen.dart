@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/ecu_data.dart';
@@ -351,106 +350,53 @@ class _ImmoBanner extends StatelessWidget {
   }
 }
 
-// Botão de partida via touch — hold 1,5s para dar a partida
-class _StartButton extends StatefulWidget {
+// Botão de partida via touch — um toque dá a partida (firmware desliga em 5s)
+class _StartButton extends StatelessWidget {
   final BleService ble;
   final EcuData data;
 
   const _StartButton({required this.ble, required this.data});
 
   @override
-  State<_StartButton> createState() => _StartButtonState();
-}
-
-class _StartButtonState extends State<_StartButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _ctrl.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        widget.ble.sendCommand(0x04); // CMD_STARTER_PULSE
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.data.starterCranking) {
-      // Motor de arranque ligado: mostra spinner + botão para parar
-      return FloatingActionButton.extended(
-        onPressed: () => widget.ble.sendCommand(0x05), // CMD_STARTER_STOP
-        backgroundColor: Colors.orange.shade700,
-        icon: const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-              strokeWidth: 2.5, color: Colors.white),
-        ),
-        label: const Text('ARRANCANDO — toque p/ parar',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-      );
-    }
+    final cranking = data.starterCranking;
 
     return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) {
-        if (_ctrl.status != AnimationStatus.completed) _ctrl.reset();
-      },
-      onTapCancel: () {
-        if (_ctrl.status != AnimationStatus.completed) _ctrl.reset();
-      },
-      child: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (_, __) {
-          return SizedBox(
-            width: 72,
-            height: 72,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: CircularProgressIndicator(
-                    value: _ctrl.value,
-                    strokeWidth: 5,
-                    color: Colors.red,
-                    backgroundColor: Colors.red.shade900.withOpacity(0.3),
-                  ),
+      onTap: cranking ? null : () => ble.sendCommand(0x04), // CMD_STARTER_PULSE
+      child: SizedBox(
+        width: 72,
+        height: 72,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            if (cranking)
+              const SizedBox(
+                width: 72,
+                height: 72,
+                child: CircularProgressIndicator(
+                  strokeWidth: 5,
+                  color: Colors.orange,
                 ),
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red.shade700,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.red.withOpacity(0.5),
-                          blurRadius: 12,
-                          spreadRadius: 2)
-                    ],
-                  ),
-                  child: const Icon(Icons.power_settings_new,
-                      color: Colors.white, size: 32),
-                ),
-              ],
+              ),
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cranking ? Colors.orange.shade700 : Colors.red.shade700,
+                boxShadow: [
+                  BoxShadow(
+                      color: (cranking ? Colors.orange : Colors.red)
+                          .withOpacity(0.5),
+                      blurRadius: 12,
+                      spreadRadius: 2)
+                ],
+              ),
+              child: const Icon(Icons.power_settings_new,
+                  color: Colors.white, size: 32),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
