@@ -109,6 +109,20 @@
 #define FUEL_RESERVE_SW_PIN   23      // GPIO23 — chave de reserva (ativa em LOW)
 #define FUEL_RESERVE_SW_ACTIVE LOW    // nível quando está na reserva
 
+// ── Sistema Keyless (sem chave física) ───────────────────────────────────
+// O ESP32 fica alimentado em KL30 (bateria direta, ~2mA standby).
+// O relé KL15 (normalmente aberto) é fechado pelo ESP32 quando o celular
+// está próximo — energiza ECU, bomba, bobina e instrumentos.
+// Sem o celular autorizado = KL15 aberta = moto inerte.
+#define KL15_RELAY_PIN        19    // GPIO19 → relé KL15 (normalmente aberto)
+#define KL15_RELAY_LEVEL      HIGH  // HIGH = relé fechado = KL15 ligado
+#define KL15_AUTOLOCK_S       30    // s sem BLE com motor desligado → bloqueia
+
+// Botão físico oculto (emergência: celular sem bateria)
+// Esconder em local discreto no quadro — mantém um botão de backup
+#define BACKUP_BTN_PIN        15    // GPIO15 — pull-up interno; ativo em LOW
+#define BACKUP_BTN_ACTIVE     LOW
+
 // ── Partida via Touch (motor de arranque) ─────────────────────────────────
 // Relé no GPIO18 aciona o motor de arranque; segurança: RPM==0, sem crash, sem immo
 #define STARTER_RELAY_PIN        18    // GPIO18 → bobina do relé do arranque

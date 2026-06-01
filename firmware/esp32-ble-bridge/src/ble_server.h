@@ -42,7 +42,8 @@ struct __attribute__((packed)) BleRealtimePacket {
     uint8_t  econ_kmpl10;// [25]    Consumo instantâneo km/l ×10
     uint8_t  cold_min_c; // [26]    Temp mínima recomendada p/ partida (°C)
     uint8_t  heater_s;   // [27]    Segundos restantes de preaquecimento
-    // flags2: bit0=IMMO_ENABLED, bit1=IMMO_COUNTDOWN, bit2=IMMO_KILLED, bit3=STARTER_CRANKING
+    // flags2: bit0=IMMO_ENABLED, bit1=IMMO_COUNTDOWN, bit2=IMMO_KILLED,
+    //   bit3=STARTER_CRANKING, bit4=IGNITION_ON (KL15 ligada)
     uint8_t  flags2;          // [28]
     uint8_t  immo_countdown_s;// [29]   Segundos p/ corte do imobilizador
 };

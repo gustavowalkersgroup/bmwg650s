@@ -45,6 +45,9 @@ class EcuData {
   final bool starterCranking;// motor de arranque girando
   final int immoCountdownS;  // segundos restantes no countdown
 
+  // Keyless (sem chave)
+  final bool ignitionOn;     // KL15 ligada (moto energizada)
+
   // Alarmes
   final bool alarmClt;
   final bool alarmRpm;
@@ -93,6 +96,7 @@ class EcuData {
     this.immoKilled = false,
     this.starterCranking = false,
     this.immoCountdownS = 0,
+    this.ignitionOn = false,
     this.imuOk = false,
     this.alarmClt = false,
     this.alarmRpm = false,
@@ -150,6 +154,7 @@ class EcuData {
       immoKilled:     (flags2 & (1 << 2)) != 0,
       starterCranking:(flags2 & (1 << 3)) != 0,
       immoCountdownS: bytes.length > 29 ? bytes[29] : 0,
+      ignitionOn:     (flags2 & (1 << 4)) != 0,
       alarmClt:    (alarms & (1 << 0)) != 0,
       alarmRpm:    (alarms & (1 << 1)) != 0,
       alarmBatt:   (alarms & (1 << 2)) != 0,

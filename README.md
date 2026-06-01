@@ -30,6 +30,7 @@ Sensores ──► Speeduino (ECU) ──UART──► ESP32 (BLE) ──BLE─�
 | [`docs/flex-fuel.md`](docs/flex-fuel.md) | Conversão flex (gasolina/etanol) com Speeduino |
 | [`docs/fuel-level-and-imu.md`](docs/fuel-level-and-imu.md) | Medidor de combustível virtual + IMU (inclinação/queda) |
 | [`docs/ethanol-cold-start.md`](docs/ethanol-cold-start.md) | Partida a frio com etanol + aquecedor de admissão |
+| [`docs/keyless-antitheft.md`](docs/keyless-antitheft.md) | Keyless (sem chave) + anti-furto via relé KL15 e imobilizador BLE |
 
 ## Início Rápido
 
@@ -76,6 +77,8 @@ flutter run
 - **Combustível virtual**: nível, autonomia e consumo (km/l) — sem boia
 - **IMU**: ângulo de inclinação + detecção de queda (corta a bomba)
 - **Partida a frio**: indicador de motor frio + aquecedor para etanol
+- **Keyless**: liga/desliga e dá partida pelo celular — sem chave física
+- **Anti-furto**: imobilizador por proximidade BLE + relé KL15 + auto-lock
 - Editor de mapa VE 16×16
 - Log de dados em tempo real
 

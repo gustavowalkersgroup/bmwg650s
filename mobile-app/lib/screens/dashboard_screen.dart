@@ -26,6 +26,13 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             actions: [
+              // Desligar a moto (KL15) — só quando energizada
+              if (ble.isConnected && data.ignitionOn)
+                IconButton(
+                  icon: const Icon(Icons.power_settings_new, color: Colors.greenAccent),
+                  tooltip: 'Desligar a moto',
+                  onPressed: () => _confirmIgnitionOff(context, ble, data),
+                ),
               if (!ble.isConnected)
                 IconButton(
                   icon: const Icon(Icons.bluetooth_searching, color: Colors.blue),
@@ -38,11 +45,14 @@ class DashboardScreen extends StatelessWidget {
                 ),
             ],
           ),
-          floatingActionButton: ble.isConnected && !data.crash && !data.immoKilled &&
+          floatingActionButton: ble.isConnected && data.ignitionOn &&
+                  !data.crash && !data.immoKilled &&
                   (data.rpm < 500 || data.starterCranking)
               ? _StartButton(ble: ble, data: data)
               : null,
-          body: Column(
+          body: (ble.isConnected && !data.ignitionOn)
+              ? _IgnitionOffScreen(ble: ble)
+              : Column(
             children: [
               if (data.immoKilled || data.immoCountdown)
                 _ImmoBanner(data: data, ble: ble),
@@ -178,6 +188,107 @@ class DashboardScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _confirmIgnitionOff(BuildContext context, BleService ble, EcuData data) {
+    final running = data.rpm >= 500;
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Desligar a moto?',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+          running
+              ? 'O MOTOR ESTÁ LIGADO. Isso corta ignição e injeção — '
+                  'o motor vai parar imediatamente. Confirme apenas com a moto parada.'
+              : 'Corta a KL15 e desenergiza a moto. Você precisará do celular '
+                  'próximo para religar.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: running ? Colors.red : Colors.blueGrey),
+            onPressed: () {
+              ble.sendCommand(0x0A); // CMD_IGNITION_OFF
+              Navigator.pop(context);
+            },
+            child: const Text('Desligar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Tela exibida quando a moto está conectada mas com a ignição desligada (KL15 off)
+class _IgnitionOffScreen extends StatelessWidget {
+  final BleService ble;
+  const _IgnitionOffScreen({required this.ble});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock, color: Colors.white24, size: 48),
+          const SizedBox(height: 8),
+          const Text('MOTO BLOQUEADA',
+              style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2)),
+          const SizedBox(height: 32),
+          GestureDetector(
+            onTap: () => ble.sendCommand(0x09), // CMD_IGNITION_ON
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.green.shade700,
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.green.withOpacity(0.4),
+                      blurRadius: 30,
+                      spreadRadius: 4),
+                ],
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.power_settings_new, color: Colors.white, size: 56),
+                  SizedBox(height: 4),
+                  Text('LIGAR',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Toque para energizar a moto (KL15). Em seguida use o botão '
+              'vermelho de partida para acionar o motor.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

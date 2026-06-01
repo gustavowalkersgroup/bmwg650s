@@ -25,6 +25,21 @@
 
 **Subtotal opcional: ~R$129–307**
 
+## Keyless + Anti-Furto (sem chave física)
+
+| # | Componente | Especificação | Qtd | Preço Est. (R$) | Onde Comprar |
+|---|---|---|---|---|---|
+| C1 | Relé KL15 30–40A | conduz a corrente de toda a moto + socket | 1 | 15–25 | Autopeças |
+| C2 | Fusível inline KL15 | dimensionado p/ consumo total | 1 | 8 | Autopeças |
+| C3 | Botão momentâneo oculto | NA, à prova d'água (backup de emergência) | 1 | 8–15 | AliExpress, autopeças |
+| C4 | Conversor DC-DC 12V→5V | eficiente, p/ ESP32 em standby na KL30 | 1 | 10–20 | AliExpress |
+
+**Subtotal keyless: ~R$41–68**
+
+> **Anti-furto reaproveitado**: o relé de corte da bomba (B3) e o imobilizador
+> por BLE já fazem parte do sistema; o keyless só adiciona o relé KL15 e a
+> lógica no ESP32. Ver `docs/keyless-antitheft.md`.
+
 > **Combustível virtual**: não precisa de peça nova — usa a injeção já
 > existente + a chave de reserva original. Custo R$0.
 > Ver `docs/fuel-level-and-imu.md`.

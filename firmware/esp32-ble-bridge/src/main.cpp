@@ -9,6 +9,7 @@
 #include "cold_start.h"
 #include "starter.h"
 #include "immobilizer.h"
+#include "keyless.h"
 
 static SpeeduinoData   g_data;
 static float           g_oil_press_bar = 0.0f;
@@ -48,6 +49,14 @@ void task_serial_read(void *param) {
         bool ok = speeduino_request_realtime(local);
         float oil = read_oil_pressure();
 
+        // RPM real se houver dados; 0 quando a KL15 está desligada (Speeduino off)
+        uint16_t rpm = ok ? local.rpm : 0;
+
+        // Sempre roda — o botão físico precisa religar a moto mesmo com KL15 off
+        keyless_update(rpm, SERIAL_POLL_MS);
+        starter_update(rpm);
+        immobilizer_update(rpm, SERIAL_POLL_MS);
+
         if (ok) {
             float pw_ms = local.pw1_ms10 / 10.0f;
             fuel_update(pw_ms, local.rpm, local.vss, SERIAL_POLL_MS);
@@ -57,9 +66,6 @@ void task_serial_read(void *param) {
             cold_start_update(clt_c, local.flex_sensor, local.rpm, SERIAL_POLL_MS);
             ColdStartState cold = cold_start_get();
 
-            starter_update(local.rpm);
-            immobilizer_update(local.rpm, SERIAL_POLL_MS);
-
             xSemaphoreTake(g_data_mutex, portMAX_DELAY);
             g_data          = local;
             g_oil_press_bar = oil;
@@ -67,7 +73,10 @@ void task_serial_read(void *param) {
             g_cold          = cold;
             xSemaphoreGive(g_data_mutex);
         } else {
-            Serial.println("[UART] Timeout Speeduino");
+            // KL15 desligada ou Speeduino sem resposta — zera RPM exibido
+            xSemaphoreTake(g_data_mutex, portMAX_DELAY);
+            g_data.rpm = 0;
+            xSemaphoreGive(g_data_mutex);
         }
 
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(SERIAL_POLL_MS));
@@ -112,7 +121,7 @@ void task_imu_ble(void *param) {
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("\n[BOOT] BMW F650GS ECU Bridge v1.2");
+    Serial.println("\n[BOOT] BMW F650GS ECU Bridge v1.3 (keyless)");
 
     g_data_mutex = xSemaphoreCreateMutex();
     memset(&g_data, 0, sizeof(g_data));
@@ -126,6 +135,7 @@ void setup() {
     digitalWrite(FUEL_PUMP_KILL_PIN, !FUEL_PUMP_KILL_LEVEL);  // bomba liberada
 #endif
 
+    keyless_init();
     speeduino_init();
     fuel_init();
     imu_init();

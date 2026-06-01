@@ -2,6 +2,7 @@
 #include "config.h"
 #include "starter.h"
 #include "immobilizer.h"
+#include "keyless.h"
 #include <NimBLEDevice.h>
 
 static NimBLEServer         *pServer      = nullptr;
@@ -13,6 +14,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer *pSvr) override {
         connected = true;
         immobilizer_on_ble_connect();
+        keyless_on_ble_connect();
         Serial.println("[BLE] Cliente conectado");
         pSvr->updateConnParams(pSvr->getPeerInfo(0).getConnHandle(), 6, 12, 0, 300);
     }
@@ -20,6 +22,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     void onDisconnect(NimBLEServer *pSvr) override {
         connected = false;
         immobilizer_on_ble_disconnect();
+        keyless_on_ble_disconnect();
         Serial.println("[BLE] Cliente desconectado — reiniciando advertising");
         NimBLEDevice::startAdvertising();
     }
@@ -35,6 +38,8 @@ enum BleCommand : uint8_t {
     CMD_IMMOBILIZER_ENABLE  = 0x06,  // ativar imobilizador por proximidade BLE
     CMD_IMMOBILIZER_DISABLE = 0x07,  // desativar / modo valet (sem imobilizador)
     CMD_IMMOBILIZER_ACK     = 0x08,  // desbloquear após corte (celular reconectou)
+    CMD_IGNITION_ON         = 0x09,  // liga KL15 (energiza a moto — keyless)
+    CMD_IGNITION_OFF        = 0x0A,  // desliga KL15 (desliga a moto)
 };
 
 // Callback para receber comandos do app
@@ -72,6 +77,12 @@ class CommandCallbacks : public NimBLECharacteristicCallbacks {
                 break;
             case CMD_IMMOBILIZER_ACK:
                 immobilizer_ack();
+                break;
+            case CMD_IGNITION_ON:
+                keyless_ignition_on();
+                break;
+            case CMD_IGNITION_OFF:
+                keyless_ignition_off();
                 break;
             default:
                 break;
@@ -154,6 +165,7 @@ void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
     if (immobilizer_is_countdown()) pkt.flags2 |= (1 << 1);
     if (immobilizer_is_killed())    pkt.flags2 |= (1 << 2);
     if (starter_is_cranking())      pkt.flags2 |= (1 << 3);
+    if (keyless_is_on())            pkt.flags2 |= (1 << 4);
 
     pkt.status = 0;
     if (imu.crash)         pkt.status |= (1 << 0);
