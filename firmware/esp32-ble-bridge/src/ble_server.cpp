@@ -1,5 +1,7 @@
 #include "ble_server.h"
 #include "config.h"
+#include "starter.h"
+#include "immobilizer.h"
 #include <NimBLEDevice.h>
 
 static NimBLEServer         *pServer      = nullptr;
@@ -10,23 +12,29 @@ static bool                  connected    = false;
 class ServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer *pSvr) override {
         connected = true;
+        immobilizer_on_ble_connect();
         Serial.println("[BLE] Cliente conectado");
-        // Reduz intervalo de conexão para menor latência
         pSvr->updateConnParams(pSvr->getPeerInfo(0).getConnHandle(), 6, 12, 0, 300);
     }
 
     void onDisconnect(NimBLEServer *pSvr) override {
         connected = false;
+        immobilizer_on_ble_disconnect();
         Serial.println("[BLE] Cliente desconectado — reiniciando advertising");
         NimBLEDevice::startAdvertising();
     }
 };
 
-// Códigos de comando do app
+// Códigos de comando do app (sincronizar com settings_screen.dart)
 enum BleCommand : uint8_t {
-    CMD_FUEL_REFILL    = 0x01,  // tanque cheio — zera consumo
-    CMD_CLEAR_CRASH    = 0x02,  // piloto levantou a moto — limpa flag de queda
-    CMD_FUEL_SET_L     = 0x03,  // define litros restantes: byte[1] = litros ×10
+    CMD_FUEL_REFILL         = 0x01,  // tanque cheio — zera consumo
+    CMD_CLEAR_CRASH         = 0x02,  // piloto levantou a moto — limpa flag de queda
+    CMD_FUEL_SET_L          = 0x03,  // define litros: byte[1] = litros ×10
+    CMD_STARTER_PULSE       = 0x04,  // dar a partida (motor de arranque)
+    CMD_STARTER_STOP        = 0x05,  // parar arranque manualmente
+    CMD_IMMOBILIZER_ENABLE  = 0x06,  // ativar imobilizador por proximidade BLE
+    CMD_IMMOBILIZER_DISABLE = 0x07,  // desativar / modo valet (sem imobilizador)
+    CMD_IMMOBILIZER_ACK     = 0x08,  // desbloquear após corte (celular reconectou)
 };
 
 // Callback para receber comandos do app
@@ -50,8 +58,22 @@ class CommandCallbacks : public NimBLECharacteristicCallbacks {
                     fuel_set_remaining((uint8_t)val[1] / 10.0f);
                 }
                 break;
+            case CMD_STARTER_PULSE:
+                starter_pulse();
+                break;
+            case CMD_STARTER_STOP:
+                starter_stop();
+                break;
+            case CMD_IMMOBILIZER_ENABLE:
+                immobilizer_set_enabled(true);
+                break;
+            case CMD_IMMOBILIZER_DISABLE:
+                immobilizer_set_enabled(false);
+                break;
+            case CMD_IMMOBILIZER_ACK:
+                immobilizer_ack();
+                break;
             default:
-                // Expansão futura: repassar comandos ao Speeduino via UART
                 break;
         }
     }
@@ -123,8 +145,15 @@ void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
     pkt.lean_deg    = (int8_t)constrain((int)imu.lean_deg, -90, 90);
     pkt.fuel_pct    = fuel.level_pct;
     pkt.econ_kmpl10 = (uint8_t)constrain((int)(fuel.econ_kmpl * 10.0f), 0, 255);
-    pkt.cold_min_c  = cold.min_start_c;
-    pkt.heater_s    = cold.heater_left_s;
+    pkt.cold_min_c       = cold.min_start_c;
+    pkt.heater_s         = cold.heater_left_s;
+    pkt.immo_countdown_s = immobilizer_countdown_s();
+
+    pkt.flags2 = 0;
+    if (immobilizer_is_enabled())   pkt.flags2 |= (1 << 0);
+    if (immobilizer_is_countdown()) pkt.flags2 |= (1 << 1);
+    if (immobilizer_is_killed())    pkt.flags2 |= (1 << 2);
+    if (starter_is_cranking())      pkt.flags2 |= (1 << 3);
 
     pkt.status = 0;
     if (imu.crash)         pkt.status |= (1 << 0);

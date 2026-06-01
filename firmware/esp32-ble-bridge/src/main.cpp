@@ -7,6 +7,8 @@
 #include "imu_sensor.h"
 #include "fuel_tracker.h"
 #include "cold_start.h"
+#include "starter.h"
+#include "immobilizer.h"
 
 static SpeeduinoData   g_data;
 static float           g_oil_press_bar = 0.0f;
@@ -28,11 +30,14 @@ static float read_oil_pressure() {
     return constrain(bar, 0.0f, OIL_PRESS_BAR_MAX);
 }
 
-// Corta a bomba de combustível ao detectar queda (segurança anti-incêndio)
+// Corta a bomba: queda OU imobilizador ativo
 static void apply_fuel_cut(bool crash) {
+    bool kill = false;
 #if FUEL_CUT_ON_CRASH
-    digitalWrite(FUEL_PUMP_KILL_PIN, crash ? FUEL_PUMP_KILL_LEVEL : !FUEL_PUMP_KILL_LEVEL);
+    kill |= crash;
 #endif
+    kill |= immobilizer_is_killed();
+    digitalWrite(FUEL_PUMP_KILL_PIN, kill ? FUEL_PUMP_KILL_LEVEL : !FUEL_PUMP_KILL_LEVEL);
 }
 
 // Task no Core 0: lê dados do Speeduino via UART, pressão de óleo e combustível
@@ -51,6 +56,9 @@ void task_serial_read(void *param) {
             int clt_c = (int)local.temp_clt - 40;
             cold_start_update(clt_c, local.flex_sensor, local.rpm, SERIAL_POLL_MS);
             ColdStartState cold = cold_start_get();
+
+            starter_update(local.rpm);
+            immobilizer_update(local.rpm, SERIAL_POLL_MS);
 
             xSemaphoreTake(g_data_mutex, portMAX_DELAY);
             g_data          = local;
@@ -104,7 +112,7 @@ void task_imu_ble(void *param) {
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("\n[BOOT] BMW F650GS ECU Bridge v1.1");
+    Serial.println("\n[BOOT] BMW F650GS ECU Bridge v1.2");
 
     g_data_mutex = xSemaphoreCreateMutex();
     memset(&g_data, 0, sizeof(g_data));
@@ -122,6 +130,8 @@ void setup() {
     fuel_init();
     imu_init();
     cold_start_init();
+    starter_init();
+    immobilizer_init();
     ble_init();
 
     // Core 0: comunicação serial com Speeduino (mesmo core do protocolo WiFi/BT basal)
@@ -137,7 +147,7 @@ void loop() {
     // Loop principal livre — tasks gerenciam o trabalho
     delay(5000);
     Serial.printf("[STATUS] RPM=%u CLT=%d AFR=%.1f OIL=%.1fbar FLEX=%d%% "
-                  "LEAN=%.0f COMB=%d%% (%.1f km/l)%s%s%s\n",
+                  "LEAN=%.0f COMB=%d%% (%.1f km/l)%s%s%s%s%s\n",
         g_data.rpm,
         (int)g_data.temp_clt - 40,
         g_data.o2_primary / 10.0f,
@@ -150,6 +160,10 @@ void loop() {
         g_imu.crash ? " [QUEDA!]" : "",
         g_cold.heater_active ? " [AQUECENDO]" :
             (g_cold.too_cold_estart ? " [FRIO P/ ETANOL]" :
-            (g_cold.engine_cold ? " [MOTOR FRIO]" : ""))
+            (g_cold.engine_cold ? " [MOTOR FRIO]" : "")),
+        starter_is_cranking() ? " [ARRANCANDO]" : "",
+        immobilizer_is_killed() ? " [IMOBILIZADO]" :
+            (immobilizer_is_countdown()
+                ? " [IMMO COUNTDOWN]" : "")
     );
 }

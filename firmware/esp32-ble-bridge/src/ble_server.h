@@ -10,7 +10,7 @@ void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
                          const ColdStartState &cold);
 bool ble_is_connected();
 
-// Pacote BLE de 28 bytes enviado ao app a cada 50ms
+// Pacote BLE de 30 bytes enviado ao app a cada 50ms
 struct __attribute__((packed)) BleRealtimePacket {
     uint16_t rpm;        // [0-1]   RPM real
     uint8_t  tps;        // [2]     TPS 0–100%
@@ -25,7 +25,7 @@ struct __attribute__((packed)) BleRealtimePacket {
     uint8_t  pw_ms10;    // [11]    Largura pulso ×0,1ms
     uint8_t  idle_duty;  // [12]    IAC duty %
     uint8_t  sync;       // [13]    0=sincronizado, 1=sem sync
-    // alarms bitfield: bit0=CLT, bit1=RPM, bit2=BATT, bit3=LEAN, bit4=RICH, bit5=OIL, bit6=KNOCK
+    // alarms: bit0=CLT, bit1=RPM, bit2=BATT, bit3=LEAN, bit4=RICH, bit5=OIL, bit6=KNOCK
     uint8_t  alarms;     // [14]
     uint8_t  corrections;// [15]    Correções %
     uint8_t  flex_pct;   // [16]    Teor etanol %
@@ -35,11 +35,14 @@ struct __attribute__((packed)) BleRealtimePacket {
     uint8_t  oil_press10;// [20]    Pressão de óleo ×10 bar (lida pelo ESP32)
     uint8_t  knock_ret;  // [21]    Retardo knock graus (via Speeduino)
     int8_t   lean_deg;   // [22]    Inclinação lateral (graus, IMU)
-    // status bitfield: bit0=CRASH, bit1=LOW_FUEL, bit2=IMU_OK,
+    // status: bit0=CRASH, bit1=LOW_FUEL, bit2=IMU_OK,
     //   bit3=ENGINE_COLD, bit4=TOO_COLD_ETHANOL, bit5=HEATER_ON, bit6=READY_START
     uint8_t  status;     // [23]
     uint8_t  fuel_pct;   // [24]    Nível de combustível virtual (%)
     uint8_t  econ_kmpl10;// [25]    Consumo instantâneo km/l ×10
     uint8_t  cold_min_c; // [26]    Temp mínima recomendada p/ partida (°C)
     uint8_t  heater_s;   // [27]    Segundos restantes de preaquecimento
+    // flags2: bit0=IMMO_ENABLED, bit1=IMMO_COUNTDOWN, bit2=IMMO_KILLED, bit3=STARTER_CRANKING
+    uint8_t  flags2;          // [28]
+    uint8_t  immo_countdown_s;// [29]   Segundos p/ corte do imobilizador
 };

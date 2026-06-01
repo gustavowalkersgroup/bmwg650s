@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/ecu_data.dart';
@@ -38,8 +39,14 @@ class DashboardScreen extends StatelessWidget {
                 ),
             ],
           ),
+          floatingActionButton: ble.isConnected && !data.crash && !data.immoKilled &&
+                  (data.rpm < 500 || data.starterCranking)
+              ? _StartButton(ble: ble, data: data)
+              : null,
           body: Column(
             children: [
+              if (data.immoKilled || data.immoCountdown)
+                _ImmoBanner(data: data, ble: ble),
               if (data.hasAlarm) _AlarmBanner(data: data),
               if (data.engineCold || data.tooColdEthanol || data.heaterOn)
                 _ColdStartBanner(data: data),
@@ -277,6 +284,173 @@ class _ColdStartBanner extends StatelessWidget {
           if (data.readyToStart && !data.heaterOn)
             const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
         ],
+      ),
+    );
+  }
+}
+
+// Banner de imobilizador por proximidade BLE
+class _ImmoBanner extends StatelessWidget {
+  final EcuData data;
+  final BleService ble;
+
+  const _ImmoBanner({required this.data, required this.ble});
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.immoKilled) {
+      return Container(
+        width: double.infinity,
+        color: Colors.red.shade900,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.lock, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'IMOBILIZADOR ATIVO — combustível cortado. Reconecte e desbloqueie.',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
+            TextButton(
+              onPressed: () => ble.sendCommand(0x08), // CMD_IMMOBILIZER_ACK
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red.shade700,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              ),
+              child: const Text('Desbloquear', style: TextStyle(fontSize: 11)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Countdown ativo
+    return Container(
+      width: double.infinity,
+      color: Colors.orange.shade800,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.timer, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'SEGURANÇA: BLE perdido — corte do motor em ${data.immoCountdownS}s. '
+              'Reaproxime o celular.',
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Botão de partida via touch — hold 1,5s para dar a partida
+class _StartButton extends StatefulWidget {
+  final BleService ble;
+  final EcuData data;
+
+  const _StartButton({required this.ble, required this.data});
+
+  @override
+  State<_StartButton> createState() => _StartButtonState();
+}
+
+class _StartButtonState extends State<_StartButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _ctrl.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        widget.ble.sendCommand(0x04); // CMD_STARTER_PULSE
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.data.starterCranking) {
+      // Motor de arranque ligado: mostra spinner + botão para parar
+      return FloatingActionButton.extended(
+        onPressed: () => widget.ble.sendCommand(0x05), // CMD_STARTER_STOP
+        backgroundColor: Colors.orange.shade700,
+        icon: const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+              strokeWidth: 2.5, color: Colors.white),
+        ),
+        label: const Text('ARRANCANDO — toque p/ parar',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+      );
+    }
+
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        if (_ctrl.status != AnimationStatus.completed) _ctrl.reset();
+      },
+      onTapCancel: () {
+        if (_ctrl.status != AnimationStatus.completed) _ctrl.reset();
+      },
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, __) {
+          return SizedBox(
+            width: 72,
+            height: 72,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: CircularProgressIndicator(
+                    value: _ctrl.value,
+                    strokeWidth: 5,
+                    color: Colors.red,
+                    backgroundColor: Colors.red.shade900.withOpacity(0.3),
+                  ),
+                ),
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.red.shade700,
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.red.withOpacity(0.5),
+                          blurRadius: 12,
+                          spreadRadius: 2)
+                    ],
+                  ),
+                  child: const Icon(Icons.power_settings_new,
+                      color: Colors.white, size: 32),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

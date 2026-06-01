@@ -38,6 +38,13 @@ class EcuData {
   final int coldMinC;       // temp mínima recomendada p/ partida (°C)
   final int heaterSecs;     // segundos restantes de preaquecimento
 
+  // Partida via touch + imobilizador BLE
+  final bool immoEnabled;    // imobilizador por proximidade ativado
+  final bool immoCountdown;  // countdown ativo (celular sumiu, motor rodando)
+  final bool immoKilled;     // combustível cortado — aguardando ack
+  final bool starterCranking;// motor de arranque girando
+  final int immoCountdownS;  // segundos restantes no countdown
+
   // Alarmes
   final bool alarmClt;
   final bool alarmRpm;
@@ -81,6 +88,11 @@ class EcuData {
     this.readyToStart = true,
     this.coldMinC = 0,
     this.heaterSecs = 0,
+    this.immoEnabled = false,
+    this.immoCountdown = false,
+    this.immoKilled = false,
+    this.starterCranking = false,
+    this.immoCountdownS = 0,
     this.imuOk = false,
     this.alarmClt = false,
     this.alarmRpm = false,
@@ -96,8 +108,9 @@ class EcuData {
     if (bytes.length < 20) return const EcuData();
 
     final bd = ByteData.sublistView(bytes);
-    final alarms = bytes[14];
-    final status = bytes.length > 23 ? bytes[23] : 0;
+    final alarms  = bytes[14];
+    final status  = bytes.length > 23 ? bytes[23] : 0;
+    final flags2  = bytes.length > 28 ? bytes[28] : 0;
 
     return EcuData(
       rpm:         bd.getUint16(0, Endian.little),
@@ -132,6 +145,11 @@ class EcuData {
       readyToStart:   (status & (1 << 6)) != 0,
       coldMinC:    bytes.length > 26 ? bytes[26] : 0,
       heaterSecs:  bytes.length > 27 ? bytes[27] : 0,
+      immoEnabled:    (flags2 & (1 << 0)) != 0,
+      immoCountdown:  (flags2 & (1 << 1)) != 0,
+      immoKilled:     (flags2 & (1 << 2)) != 0,
+      starterCranking:(flags2 & (1 << 3)) != 0,
+      immoCountdownS: bytes.length > 29 ? bytes[29] : 0,
       alarmClt:    (alarms & (1 << 0)) != 0,
       alarmRpm:    (alarms & (1 << 1)) != 0,
       alarmBatt:   (alarms & (1 << 2)) != 0,

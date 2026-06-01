@@ -4,9 +4,13 @@ import '../models/ecu_data.dart';
 import '../services/ble_service.dart';
 
 // Códigos de comando BLE (devem casar com ble_server.cpp no firmware)
-const int _cmdFuelRefill = 0x01;
-const int _cmdClearCrash = 0x02;
-const int _cmdFuelSetL   = 0x03;
+const int _cmdFuelRefill        = 0x01;
+const int _cmdClearCrash        = 0x02;
+const int _cmdFuelSetL          = 0x03;
+const int _cmdStarterPulse      = 0x04;
+const int _cmdImmobilizerEnable = 0x06;
+const int _cmdImmobilizerDisable= 0x07;
+const int _cmdImmobilizerAck    = 0x08;
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -69,6 +73,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
+
+              const SizedBox(height: 16),
+
+              // ── Imobilizador BLE ──────────────────────────────────────────
+              _ImmoSection(ble: ble, data: data),
 
               const SizedBox(height: 16),
 
@@ -282,6 +291,125 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Imobilizador por proximidade BLE ─────────────────────────────────────────
+
+class _ImmoSection extends StatelessWidget {
+  final BleService ble;
+  final EcuData data;
+  const _ImmoSection({required this.ble, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final isKilled   = data.immoKilled;
+    final isCountdown= data.immoCountdown;
+    final isEnabled  = data.immoEnabled;
+
+    Color statusColor = isKilled
+        ? Colors.red
+        : (isCountdown ? Colors.orange : (isEnabled ? Colors.green : Colors.white54));
+    String statusText = isKilled
+        ? 'ATIVO — motor cortado (${data.immoCountdownS}s)'
+        : (isCountdown
+            ? 'CONTAGEM: corte em ${data.immoCountdownS}s'
+            : (isEnabled ? 'Armado — monitorando BLE' : 'Desativado'));
+
+    return _Section(
+      icon: Icons.phone_locked,
+      title: 'Imobilizador BLE (Chave Presencial)',
+      children: [
+
+        // Alerta de corte ativo
+        if (isKilled) ...[
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.red.shade900.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.shade700),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('IMOBILIZADOR ATIVO',
+                    style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
+                const SizedBox(height: 4),
+                const Text(
+                  'O celular se afastou com o motor ligado e o combustível foi '
+                  'cortado por segurança. Toque em Desbloquear para religar.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.lock_open),
+                    label: const Text('Desbloquear motor'),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade700,
+                        foregroundColor: Colors.white),
+                    onPressed: ble.isConnected
+                        ? () => ble.sendCommand(_cmdImmobilizerAck)
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        _InfoRow('Estado', statusText, valueColor: statusColor),
+        const SizedBox(height: 4),
+        _InfoRow(
+          'Como funciona',
+          'Se o celular sair do alcance BLE com o motor rodando, '
+          'o ESP32 aguarda 10s e corta o combustível. '
+          'Reconectar durante a contagem cancela o corte.',
+          subtle: true,
+        ),
+        const SizedBox(height: 12),
+
+        // Toggle ativar/desativar
+        Row(
+          children: [
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.lock,
+                label: 'Ativar imobilizador',
+                subtitle: 'Chave presencial via BLE',
+                color: Colors.green,
+                enabled: ble.isConnected && !isEnabled,
+                onTap: () => ble.sendCommand(_cmdImmobilizerEnable),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.lock_open,
+                label: 'Modo valet',
+                subtitle: 'Desativa a proteção',
+                color: Colors.orange,
+                enabled: ble.isConnected && isEnabled,
+                onTap: () => ble.sendCommand(_cmdImmobilizerDisable),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Aviso: nunca ative com o motor rodando se você vai se afastar '
+          'intencionalmente da moto. Use "Modo valet" para estacionar.',
+          style: TextStyle(color: Colors.white38, fontSize: 11),
+        ),
+      ],
     );
   }
 }

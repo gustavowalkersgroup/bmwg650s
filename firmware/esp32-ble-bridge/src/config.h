@@ -109,6 +109,20 @@
 #define FUEL_RESERVE_SW_PIN   23      // GPIO23 — chave de reserva (ativa em LOW)
 #define FUEL_RESERVE_SW_ACTIVE LOW    // nível quando está na reserva
 
+// ── Partida via Touch (motor de arranque) ─────────────────────────────────
+// Relé no GPIO18 aciona o motor de arranque; segurança: RPM==0, sem crash, sem immo
+#define STARTER_RELAY_PIN        18    // GPIO18 → bobina do relé do arranque
+#define STARTER_RELAY_LEVEL      HIGH  // nível que ACIONA o relé
+#define STARTER_MAX_CRANK_S      5     // máximo contínuo de arranque (s)
+#define STARTER_MIN_RPM_OFF      200   // RPM mínimo p/ considerar motor já ligado
+#define STARTER_COOLDOWN_S       3     // intervalo mínimo entre tentativas (s)
+
+// ── Imobilizador por Proximidade BLE ─────────────────────────────────────
+// Se o celular sumir com o motor rodando: aguarda IMMOBILIZER_TIMEOUT_S e corta.
+// Reconectar durante o countdown cancela. Após corte, exige CMD_IMMOBILIZER_ACK.
+#define IMMOBILIZER_TIMEOUT_S    10    // segundos sem BLE antes do corte
+#define IMMOBILIZER_MIN_RPM      500   // RPM mínimo p/ armar o countdown
+
 // ── Partida a Frio com Etanol ─────────────────────────────────────────────
 // Etanol não vaporiza bem a frio. O ESP32 indica "motor frio" e (opcional)
 // controla um aquecedor de admissão PTC antes da partida — estilo "aguarde".
