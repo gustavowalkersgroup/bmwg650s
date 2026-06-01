@@ -5,6 +5,7 @@ import 'services/ble_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/maps_screen.dart';
 import 'screens/logs_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,6 +53,22 @@ class F650GsApp extends StatelessWidget {
   }
 }
 
+// Ícone do tab Config com badge vermelho quando há queda detectada
+class _CrashBadge extends StatelessWidget {
+  const _CrashBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<BleService>(
+      builder: (_, ble, __) => Badge(
+        isLabelVisible: ble.data.crash,
+        backgroundColor: Colors.red,
+        child: const Icon(Icons.tune),
+      ),
+    );
+  }
+}
+
 class _HomeShell extends StatefulWidget {
   const _HomeShell();
 
@@ -66,6 +83,7 @@ class _HomeShellState extends State<_HomeShell> {
     DashboardScreen(),
     MapsScreen(),
     LogsScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -88,6 +106,10 @@ class _HomeShellState extends State<_HomeShell> {
           NavigationDestination(
             icon: Icon(Icons.show_chart),
             label: 'Log',
+          ),
+          NavigationDestination(
+            icon: _CrashBadge(),
+            label: 'Config',
           ),
         ],
       ),

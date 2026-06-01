@@ -120,6 +120,12 @@ class BleService extends ChangeNotifier {
     await _commandChar!.write([cmd], withoutResponse: true);
   }
 
+  // Envia comando com payload adicional (ex: CMD_FUEL_SET_L + litros×10)
+  Future<void> sendCommandBytes(List<int> bytes) async {
+    if (_commandChar == null) return;
+    await _commandChar!.write(bytes, withoutResponse: true);
+  }
+
   void _setStatus(BleStatus s) {
     _status = s;
     notifyListeners();
