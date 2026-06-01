@@ -39,3 +39,45 @@
 #define ALARM_AFR_RICH        105     // AFR muito rico (×10, então 10,5)
 #define ALARM_OIL_LOW_BAR10   8       // pressão de óleo baixa (×10, então 0,8 bar) em RPM > idle
 #define ALARM_KNOCK_DEG       2       // retardo knock ativo (graus)
+
+// ── Sensores de Roda ABS (grampeados em paralelo, p/ controle de tração) ──
+// Hall effect 3 fios; sinal lido em paralelo ao módulo ABS original (intacto)
+#define WHEEL_FRONT_PIN       35      // GPIO35 (input-only) — pulsos roda dianteira
+#define WHEEL_REAR_PIN        32      // GPIO32 — pulsos roda traseira
+#define WHEEL_PULSES_PER_REV  48      // dentes do anel ABS (medir/confirmar)
+#define WHEEL_CIRCUM_MM       1910    // circunferência pneu traseiro (130/80-17)
+
+// ── Controle de Tração ────────────────────────────────────────────────────
+// ESP32 calcula slip e pulsa o pino de TC do Speeduino quando excede o limiar
+#define TC_SPEEDUINO_PIN      25      // GPIO25 → entrada de TC do Speeduino
+#define TC_SLIP_ECO           10      // limiar de patinagem (%) por modo
+#define TC_SLIP_SPEED         20
+#define TC_SLIP_OFFROAD       30
+#define TC_SLIP_CRUISE        15
+
+// ── Relé do ABS (desligamento p/ OFFROAD) ─────────────────────────────────
+// Relé NF (normalmente fechado): LOW = ABS ligado (padrão seguro)
+#define ABS_RELAY_PIN         26      // GPIO26 → driver do relé do ABS
+#define ABS_RELAY_OFF_LEVEL   HIGH    // nível que ABRE o relé (desliga ABS)
+// Estado padrão na partida = ABS LIGADO (nunca persiste off entre ignições)
+
+// ── Botões de Modo de Pilotagem (guidão) ──────────────────────────────────
+// Botões com debounce; ciclam ECO → SPEED → OFFROAD → CRUISE
+#define MODE_BTN_NEXT_PIN     27      // GPIO27 — próximo modo
+#define MODE_BTN_PREV_PIN     14      // GPIO14 — modo anterior
+#define MODE_BTN_DEBOUNCE_MS  40
+
+// Modos de pilotagem (índice enviado ao app e usado nas tabelas de parâmetros)
+#define MODE_ECO              0
+#define MODE_SPEED            1
+#define MODE_OFFROAD          2
+#define MODE_CRUISE           3
+#define MODE_DEFAULT          MODE_SPEED   // modo ao ligar a moto
+
+// ── Ride-by-Wire (FASE FUTURA — desabilitado por padrão) ──────────────────
+// Migração para acelerador eletrônico. Requer mola de retorno + watchdog.
+#define RBW_ENABLED           0       // 0 = acelerador a cabo (atual); 1 = RbW
+#define RBW_THROTTLE_POT_PIN  39      // GPIO39 (input-only) — potenciômetro do punho
+#define RBW_SERVO_PIN         33      // GPIO33 — sinal PWM do servo da borboleta
+#define RBW_WATCHDOG_MS       50      // se loop travar > 50ms, força borboleta p/ 0%
+
