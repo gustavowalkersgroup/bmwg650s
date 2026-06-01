@@ -12,6 +12,21 @@
 
 **Subtotal adicional: ~R$105–175**
 
+## Sensores Opcionais (Flex + IMU + Combustível Virtual)
+
+| # | Componente | Especificação | Qtd | Preço Est. (R$) | Onde Comprar |
+|---|---|---|---|---|---|
+| B1 | Sensor flex | GM 13577429 / Continental flex fuel | 1 | 60–120 | Mercado Livre, autopeças |
+| B2 | IMU MPU6050 | Acelerômetro+giroscópio, I2C | 1 | 12–20 | AliExpress, FilipeFlop |
+| B3 | Relé bomba (corte na queda) | 12V com socket | 1 | 12 | Autopeças |
+| B4 | Injetor maior (só E100) | 350–400 cc/min, alta impedância | 1 | 60–90 | opcional, p/ etanol puro |
+
+**Subtotal opcional: ~R$84–242**
+
+> **Combustível virtual**: não precisa de peça nova — usa a injeção já
+> existente + a chave de reserva original. Custo R$0.
+> Ver `docs/fuel-level-and-imu.md`.
+
 > **Sobre o O2 original (narrowband)**: A F650GS 2001 tem apenas sensor de banda estreita (Bosch LSM11) no escapamento — saída 0,1–0,9V, serve só para malha fechada em cruzeiro (14,7 AFR). Para calibrar a ECU em toda a faixa é **obrigatório** substituir por wideband (já listado abaixo como item 6).
 
 ## Componentes Principais

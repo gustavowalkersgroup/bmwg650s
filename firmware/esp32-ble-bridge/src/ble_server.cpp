@@ -22,13 +22,37 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     }
 };
 
-// Callback para receber comandos do app (ex: mudar AFR alvo, resetar erros)
+// Códigos de comando do app
+enum BleCommand : uint8_t {
+    CMD_FUEL_REFILL    = 0x01,  // tanque cheio — zera consumo
+    CMD_CLEAR_CRASH    = 0x02,  // piloto levantou a moto — limpa flag de queda
+    CMD_FUEL_SET_L     = 0x03,  // define litros restantes: byte[1] = litros ×10
+};
+
+// Callback para receber comandos do app
 class CommandCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pChar) override {
         std::string val = pChar->getValue();
-        if (val.length() > 0) {
-            Serial.printf("[BLE] Comando recebido: 0x%02X\n", (uint8_t)val[0]);
-            // Expansão futura: repassar comandos ao Speeduino via UART
+        if (val.empty()) return;
+
+        uint8_t cmd = (uint8_t)val[0];
+        Serial.printf("[BLE] Comando recebido: 0x%02X\n", cmd);
+
+        switch (cmd) {
+            case CMD_FUEL_REFILL:
+                fuel_reset_full();
+                break;
+            case CMD_CLEAR_CRASH:
+                imu_clear_crash();
+                break;
+            case CMD_FUEL_SET_L:
+                if (val.length() >= 2) {
+                    fuel_set_remaining((uint8_t)val[1] / 10.0f);
+                }
+                break;
+            default:
+                // Expansão futura: repassar comandos ao Speeduino via UART
+                break;
         }
     }
 };
@@ -68,7 +92,8 @@ void ble_init() {
     Serial.println("[BLE] Advertising iniciado: " BLE_DEVICE_NAME);
 }
 
-void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar) {
+void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
+                         const ImuData &imu, const FuelState &fuel) {
     if (!connected || !pRealtime) {
         return;
     }
@@ -94,8 +119,14 @@ void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar) {
     pkt.speed_kmh   = data.vss;
     pkt.oil_press10 = (uint8_t)constrain((int)(oil_press_bar * 10.0f), 0, 255);
     pkt.knock_ret   = data.knock_ret;
-    pkt.reserved1   = 0;
-    pkt.reserved2   = 0;
+    pkt.lean_deg    = (int8_t)constrain((int)imu.lean_deg, -90, 90);
+    pkt.fuel_pct    = fuel.level_pct;
+    pkt.econ_kmpl10 = (uint8_t)constrain((int)(fuel.econ_kmpl * 10.0f), 0, 255);
+
+    pkt.status = 0;
+    if (imu.crash)      pkt.status |= (1 << 0);
+    if (fuel.low_fuel)  pkt.status |= (1 << 1);
+    if (imu.present)    pkt.status |= (1 << 2);
 
     // Alarme de pressão de óleo: só ativa acima de 1500 RPM (descarta idle)
     bool alarm_oil   = (data.rpm > 1500) && (oil_press_bar < (ALARM_OIL_LOW_BAR10 / 10.0f));

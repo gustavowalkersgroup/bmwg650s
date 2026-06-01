@@ -81,3 +81,32 @@
 #define RBW_SERVO_PIN         33      // GPIO33 — sinal PWM do servo da borboleta
 #define RBW_WATCHDOG_MS       50      // se loop travar > 50ms, força borboleta p/ 0%
 
+// ── IMU (MPU6050 via I2C) — inclinação + detecção de queda ────────────────
+#define IMU_ENABLED           1       // 1 = IMU instalado; 0 = desabilita leitura
+#define IMU_I2C_SDA           21      // GPIO21 — I2C SDA
+#define IMU_I2C_SCL           22      // GPIO22 — I2C SCL
+#define IMU_ADDR              0x68    // endereço I2C do MPU6050 (0x69 se AD0=HIGH)
+#define IMU_UPDATE_MS         20      // 50Hz — responsivo p/ inclinação e queda
+#define IMU_CRASH_LEAN_DEG    62      // inclinação (graus) que caracteriza queda
+#define IMU_CRASH_HOLD_MS     1500    // tempo acima do limiar p/ confirmar queda
+#define IMU_MOUNT_OFFSET_DEG  0       // ajuste se o sensor não ficar perfeitamente nivelado
+
+// Corte de combustível na queda (segurança): ESP32 corta o relé da bomba
+#define FUEL_CUT_ON_CRASH     1       // 1 = corta bomba ao detectar queda
+#define FUEL_PUMP_KILL_PIN    13      // GPIO13 → relé/MOSFET que interrompe a bomba
+#define FUEL_PUMP_KILL_LEVEL  HIGH    // nível que CORTA a bomba
+
+// ── Nível de Combustível (medidor virtual por integração de injeção) ──────
+// A F650GS não tem boia — só luz de reserva. Como controlamos a injeção,
+// integramos o volume injetado para estimar o que resta no tanque.
+#define FUEL_VIRTUAL_ENABLED  1
+#define FUEL_INJECTOR_CCMIN   270.0f  // vazão do injetor a 100% (cc/min @ 3 bar)
+#define FUEL_TANK_LITERS      17.3f   // capacidade total do tanque F650GS
+#define FUEL_RESERVE_LITERS   4.0f    // volume em que a luz de reserva acende
+#define FUEL_NVS_SAVE_MS      60000   // salva nível na flash a cada 60s (anti-wear)
+
+// Interruptor de reserva original (luz de baixo nível) lido pelo ESP32
+#define FUEL_RESERVE_SW_PIN   23      // GPIO23 — chave de reserva (ativa em LOW)
+#define FUEL_RESERVE_SW_ACTIVE LOW    // nível quando está na reserva
+
+

@@ -22,6 +22,14 @@ Sensores ──► Speeduino (ECU) ──UART──► ESP32 (BLE) ──BLE─�
 | `mobile-app/` | App Flutter — painel + editor de mapas |
 | `hardware/` | Lista de materiais, notas de circuito |
 
+### Documentação de recursos avançados
+
+| Documento | Conteúdo |
+|---|---|
+| [`docs/riding-modes-abs-rbw.md`](docs/riding-modes-abs-rbw.md) | Modos de pilotagem, controle de tração, relé ABS, ride-by-wire |
+| [`docs/flex-fuel.md`](docs/flex-fuel.md) | Conversão flex (gasolina/etanol) com Speeduino |
+| [`docs/fuel-level-and-imu.md`](docs/fuel-level-and-imu.md) | Medidor de combustível virtual + IMU (inclinação/queda) |
+
 ## Início Rápido
 
 ### 1. Hardware
@@ -62,6 +70,10 @@ flutter run
 - TPS (posição do acelerador)
 - Avanço de ignição
 - Tensão da bateria
+- Pressão de óleo, knock, velocidade
+- Teor de etanol (flex), correções
+- **Combustível virtual**: nível, autonomia e consumo (km/l) — sem boia
+- **IMU**: ângulo de inclinação + detecção de queda (corta a bomba)
 - Editor de mapa VE 16×16
 - Log de dados em tempo real
 

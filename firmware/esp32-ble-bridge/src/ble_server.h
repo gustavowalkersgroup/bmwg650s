@@ -1,11 +1,14 @@
 #pragma once
 #include "speeduino_serial.h"
+#include "imu_sensor.h"
+#include "fuel_tracker.h"
 
 void ble_init();
-void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar);
+void ble_notify_realtime(const SpeeduinoData &data, float oil_press_bar,
+                         const ImuData &imu, const FuelState &fuel);
 bool ble_is_connected();
 
-// Pacote BLE de 24 bytes enviado ao app a cada 50ms
+// Pacote BLE de 26 bytes enviado ao app a cada 50ms
 struct __attribute__((packed)) BleRealtimePacket {
     uint16_t rpm;        // [0-1]   RPM real
     uint8_t  tps;        // [2]     TPS 0–100%
@@ -29,6 +32,9 @@ struct __attribute__((packed)) BleRealtimePacket {
     uint8_t  speed_kmh;  // [19]    Velocidade km/h (VSS via Speeduino)
     uint8_t  oil_press10;// [20]    Pressão de óleo ×10 bar (lida pelo ESP32)
     uint8_t  knock_ret;  // [21]    Retardo knock graus (via Speeduino)
-    uint8_t  reserved1;  // [22]
-    uint8_t  reserved2;  // [23]
+    int8_t   lean_deg;   // [22]    Inclinação lateral (graus, IMU)
+    // status bitfield: bit0=CRASH, bit1=LOW_FUEL/reserva, bit2=IMU_OK
+    uint8_t  status;     // [23]
+    uint8_t  fuel_pct;   // [24]    Nível de combustível virtual (%)
+    uint8_t  econ_kmpl10;// [25]    Consumo instantâneo km/l ×10
 };

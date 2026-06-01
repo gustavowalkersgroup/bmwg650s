@@ -22,6 +22,14 @@ class EcuData {
   final double oilPressBar;
   final int knockRetDeg;
 
+  // IMU + combustível
+  final int leanDeg;        // inclinação lateral (graus)
+  final int fuelPct;        // nível de combustível virtual (%)
+  final double econKmpl;    // consumo instantâneo (km/l)
+  final bool crash;         // queda detectada
+  final bool lowFuel;       // reserva (chave original OU virtual)
+  final bool imuOk;         // IMU presente e respondendo
+
   // Alarmes
   final bool alarmClt;
   final bool alarmRpm;
@@ -31,7 +39,7 @@ class EcuData {
   final bool alarmOil;
   final bool alarmKnock;
 
-  bool get hasAlarm => alarmClt || alarmRpm || alarmBatt || alarmLean || alarmRich || alarmOil || alarmKnock;
+  bool get hasAlarm => alarmClt || alarmRpm || alarmBatt || alarmLean || alarmRich || alarmOil || alarmKnock || crash;
 
   const EcuData({
     this.rpm = 0,
@@ -54,6 +62,12 @@ class EcuData {
     this.speedKmh = 0,
     this.oilPressBar = 0.0,
     this.knockRetDeg = 0,
+    this.leanDeg = 0,
+    this.fuelPct = 100,
+    this.econKmpl = 0.0,
+    this.crash = false,
+    this.lowFuel = false,
+    this.imuOk = false,
     this.alarmClt = false,
     this.alarmRpm = false,
     this.alarmBatt = false,
@@ -69,6 +83,7 @@ class EcuData {
 
     final bd = ByteData.sublistView(bytes);
     final alarms = bytes[14];
+    final status = bytes.length > 23 ? bytes[23] : 0;
 
     return EcuData(
       rpm:         bd.getUint16(0, Endian.little),
@@ -91,6 +106,12 @@ class EcuData {
       speedKmh:    bytes.length > 19 ? bytes[19] : 0,
       oilPressBar: bytes.length > 20 ? bytes[20] / 10.0 : 0.0,
       knockRetDeg: bytes.length > 21 ? bytes[21] : 0,
+      leanDeg:     bytes.length > 22 ? bytes[22].toSigned(8) : 0,
+      fuelPct:     bytes.length > 24 ? bytes[24] : 100,
+      econKmpl:    bytes.length > 25 ? bytes[25] / 10.0 : 0.0,
+      crash:       (status & (1 << 0)) != 0,
+      lowFuel:     (status & (1 << 1)) != 0,
+      imuOk:       (status & (1 << 2)) != 0,
       alarmClt:    (alarms & (1 << 0)) != 0,
       alarmRpm:    (alarms & (1 << 1)) != 0,
       alarmBatt:   (alarms & (1 << 2)) != 0,
@@ -104,8 +125,18 @@ class EcuData {
   // Cor do AFR: verde (stoich), amarelo (rico), vermelho (pobre)
   double get afrDeviation => (afr - afrTarget).abs();
 
+  // Capacidade do tanque F650GS (deve casar com FUEL_TANK_LITERS no firmware)
+  static const double tankLiters = 17.3;
+
+  // Litros restantes estimados a partir do nível virtual
+  double get fuelLiters => fuelPct / 100.0 * tankLiters;
+
+  // Autonomia estimada (km) = litros restantes × consumo atual
+  int get rangeKm => econKmpl > 0 ? (fuelLiters * econKmpl).round() : 0;
+
   String get alarmDescription {
     final List<String> msgs = [];
+    if (crash)      msgs.add('QUEDA DETECTADA — BOMBA CORTADA');
     if (alarmClt)   msgs.add('TEMP MOTOR ALTA');
     if (alarmRpm)   msgs.add('RPM LIMIT');
     if (alarmBatt)  msgs.add('BATERIA BAIXA');
@@ -113,6 +144,7 @@ class EcuData {
     if (alarmRich)  msgs.add('MISTURA RICA');
     if (alarmOil)   msgs.add('PRESSÃO ÓLEO BAIXA');
     if (alarmKnock) msgs.add('DETONAÇÃO DETECTADA');
+    if (lowFuel)    msgs.add('RESERVA DE COMBUSTÍVEL');
     return msgs.join(' | ');
   }
 }

@@ -138,6 +138,30 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      // Linha 3 — combustível virtual + inclinação (IMU)
+                      _Card(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _DataCell(
+                                'COMB',
+                                '${data.fuelPct}%',
+                                color: data.lowFuel ? Colors.orange : null,
+                              ),
+                              _DataCell('AUTON', data.rangeKm > 0 ? '${data.rangeKm} km' : '--'),
+                              _DataCell('CONS', '${data.econKmpl.toStringAsFixed(1)} km/l'),
+                              _DataCell(
+                                'INCL',
+                                data.imuOk ? '${data.leanDeg.abs()}°' : '--',
+                                color: data.leanDeg.abs() > 45 ? Colors.orange : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
